@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loja de Games</title>
+</head>
+<body>
+
+    <h2>Login</h2>
+    <input type="email" name="email" id="email" placeholder="example@gmail.com" style="margin-bottom: 10px;"><br>
+    <input type="text" name="password" id="password" placeholder="**********">
+    <button type="button" onclick="login()">Entrar</button>
+
+    <h3>Lista de games</h3>
+    <button id="atualizar" onclick="atualizar()">Atualizar</button>
+    <ul id="games"></ul>
+
+    <hr>
+
+    <h3>Novo game</h3>
+    <input type="text" name="title" id="title" placeholder="Título"><br>
+    <input type="number" name="year" id="year" placeholder="Ano"><br>
+    <input type="number" name="price" id="price" placeholder="Preço"><br>
+    <button type="button" onclick="createGame()">Criar</button>
+    <hr>
+
+    <h3>Editar Game</h3>
+    <input type="text" name="idEdit" id="idEdit" placeholder="ID" readonly><br>
+    <input type="text" name="titleEdit" id="titleEdit" placeholder="Título"><br>
+    <input type="number" name="yearEdit" id="yearEdit" placeholder="Ano"><br>
+    <input type="number" name="priceEdit" id="priceEdit" placeholder="Preço"><br>
+    <button type="button" onclick="updateGame()">Editar</button>
+    
+    <script src="assets/js/axios.min.js"></script>
+    <script>  
+
+        var axiosConfig = {
+            headers: {
+                Authorization: "Bearer " + localStorage.getItem('token')
+            }
+        }
+
+        function login(){
+            var emailField = document.getElementById("email");
+            var passwordField = document.getElementById("password");
+
+            var email = emailField.value;
+            var password = passwordField.value;
+            console.log(email)
+            console.log(password)
+
+            axios.post("http://localhost:3000/auth",{
+                email,
+                password
+            }).then(res => {
+
+                var token = res.data.token;
+                localStorage.setItem('token', token);
+                axiosConfig.headers.Authorization = "Bearer " + localStorage.getItem('token');
+
+                console.log(res.data)
+                alert("Logado");
+
+            }).catch(erro => {
+
+                alert("Login inválido!");
+                console.log(erro);
+            });
+        }
+
+        
+    
+        function createGame(){
+            let titleInput = document.getElementById("title").value;
+            let yearInput = document.getElementById("year").value;
+            let priceInput = document.getElementById("price").value;
+
+            let game = {
+                title: titleInput,
+                price: priceInput,
+                year: yearInput        
+            }
+
+            axios.post("http://localhost:3000/game", game, axiosConfig).then(response => {
+                if(response.status == 200){
+                    alert("Game cadastrado com sucesso!");
+                }
+               
+            }).catch(erro => {
+                console.log(erro)
+            })
+
+        }
+
+        /******************Deletar Game************************/
+        function deleteGame(listitem){
+            var id = listitem.getAttribute("data-id");
+            axios.delete("http://localhost:3000/game/"+id, axiosConfig).then(response => {
+                alert("Game deletado com successo!");
+            }).catch(erro => {
+                console.log(erro);
+            });
+        }
+        /***********************************************/
+
+        /******************Mostrar no Form***************/
+        function loadForm(listitem){
+            var id = listitem.getAttribute("data-id");
+            var title = listitem.getAttribute("data-title");
+            var year = listitem.getAttribute("data-year");
+            var price = listitem.getAttribute("data-price");
+
+            document.getElementById("idEdit").value = id;
+            document.getElementById("titleEdit").value = title;
+            document.getElementById("yearEdit").value = year;
+            document.getElementById("priceEdit").value = price;               
+        }
+        /***********************************************/
+
+
+        /*********************Atualizar Game**************************/
+        function updateGame(){
+            let idInput = document.getElementById("idEdit");
+            let titleInput = document.getElementById("titleEdit");
+            let yearInput = document.getElementById("yearEdit");
+            let priceInput = document.getElementById("priceEdit");
+
+            let game = {
+                title: titleInput.value,
+                price: priceInput.value,
+                year: yearInput.value        
+            }
+
+            let id = idInput.value;
+
+            axios.put("http://localhost:3000/game/"+id, game, axiosConfig).then(response => {
+                if(response.status == 200){
+                    alert("Game Atualizar com sucesso!");
+                }
+               
+            }).catch(erro => {
+                console.log(erro)
+            })
+        }
+        /***********************************************/
+
+        axios.get("http://localhost:3000/games",axiosConfig).then( response => {
+            let games = response.data;
+            let lista = document.getElementById("games");
+
+            games.forEach(game => {
+                var item = document.createElement("li");
+
+                item.setAttribute("data-id", game.id);
+                item.setAttribute("data-title", game.title);
+                item.setAttribute("data-year", game.year);
+                item.setAttribute("data-price", game.price);
+
+                item.innerHTML = game.id+" - "+game.title+ " - R$ "+game.price+",00";
+
+                var deleteBtn = document.createElement("button");
+                deleteBtn.innerHTML = "Deletar";
+                deleteBtn.addEventListener("click", function(){
+                    deleteGame(item)
+                });
+                
+
+                var editBtn = document.createElement("button");
+                editBtn.innerHTML = "Editar";
+                editBtn.addEventListener("click", function(){
+                    loadForm(item)
+                });
+
+                item.appendChild(editBtn);
+                item.appendChild(deleteBtn);
+                lista.appendChild(item);
+            });
+            
+        }).catch(error => {
+            console.log(error);
+        });
+
+        function atualizar(){
+            location.href=location.href;
+        }
+        
+    </script>
+</body>
+</html>
